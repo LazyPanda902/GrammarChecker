@@ -13,13 +13,13 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 30px;
 }
 
 .card {
   width: 100%;
-  max-width: 900px;
+  max-width: 950px;
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 16px;
@@ -64,14 +64,17 @@ h2 {
   gap: 16px;
   align-items: end;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.controls > div {
+.mode-box {
   flex: 1;
+  min-width: 220px;
 }
 
 .button,
-.copy-button {
+.copy-button,
+.small-button {
   background: #2563eb;
   color: white;
   border: none;
@@ -83,17 +86,31 @@ h2 {
 }
 
 .button:disabled,
-.copy-button:disabled {
+.copy-button:disabled,
+.small-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.result-header {
+.secondary-button {
+  background: #374151;
+}
+
+.delete-button {
+  background: #b91c1c;
+}
+
+.result-header,
+.history-header,
+.history-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
   gap: 12px;
+}
+
+.result-header {
+  margin-bottom: 14px;
 }
 
 .result {
@@ -104,4 +121,93 @@ h2 {
   border-radius: 10px;
   padding: 16px;
   line-height: 1.6;
+}
+
+.history-section {
+  margin-top: 32px;
+}
+
+.history-count {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.history-empty {
+  background: #0b1220;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 16px;
+  color: #9ca3af;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-item {
+  background: #0b1220;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.small-button {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.history-mode {
+  display: inline-block;
+  background: #1d4ed8;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.history-block {
+  margin-top: 14px;
+}
+
+.history-label {
+  margin: 0 0 6px 0;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.history-text {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #e5e7eb;
+}
+
+@media (max-width: 700px) {
+  .result-header,
+  .history-header,
+  .history-top,
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-actions {
+    width: 100%;
+  }
+
+  .small-button,
+  .button,
+  .copy-button {
+    width: 100%;
+  }
 }
