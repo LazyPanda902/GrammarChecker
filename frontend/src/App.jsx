@@ -6,6 +6,7 @@ function App() {
   const [mode, setMode] = useState("grammar");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async () => {
     if (!text.trim()) {
@@ -15,6 +16,7 @@ function App() {
 
     setLoading(true);
     setResult("");
+    setCopied(false);
 
     try {
       const response = await fetch("http://localhost:5000/api/grammar-check", {
@@ -39,45 +41,68 @@ function App() {
     }
   };
 
+  const handleCopy = async () => {
+    if (!result || result.startsWith("Error:")) return;
+
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      alert("Copy failed.");
+    }
+  };
+
   return (
-    <div style={{ maxWidth: "800px", margin: "40px auto", padding: "20px", fontFamily: "Arial" }}>
-      <h1>Grammar App</h1>
-      <p>Paste your text below and choose a mode.</p>
+    <div className="app">
+      <div className="card">
+        <h1>Grammar App</h1>
+        <p className="subtitle">
+          Fix grammar, rewrite text, and switch between formal or casual tone.
+        </p>
 
-      <textarea
-        rows="10"
-        style={{ width: "100%", padding: "10px", fontSize: "16px" }}
-        placeholder="Paste your text here..."
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+        <label className="label">Your text</label>
+        <textarea
+          rows="10"
+          className="textarea"
+          placeholder="Paste your text here..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
 
-      <div style={{ marginTop: "15px", marginBottom: "15px" }}>
-        <label>Select mode: </label>
-        <select value={mode} onChange={(e) => setMode(e.target.value)}>
-          <option value="grammar">Grammar</option>
-          <option value="rewrite">Rewrite</option>
-          <option value="formal">Formal</option>
-          <option value="casual">Casual</option>
-        </select>
-      </div>
+        <div className="controls">
+          <div>
+            <label className="label">Mode</label>
+            <select value={mode} onChange={(e) => setMode(e.target.value)} className="select">
+              <option value="grammar">Grammar</option>
+              <option value="rewrite">Rewrite</option>
+              <option value="formal">Formal</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
 
-      <button onClick={handleSubmit} disabled={loading} style={{ padding: "10px 20px", cursor: "pointer" }}>
-        {loading ? "Processing..." : "Submit"}
-      </button>
+          <button onClick={handleSubmit} disabled={loading} className="button">
+            {loading ? "Processing..." : "Submit"}
+          </button>
+        </div>
 
-      <h2 style={{ marginTop: "30px" }}>Result</h2>
-      <div
-        style={{
-          whiteSpace: "pre-wrap",
-          border: "1px solid #ccc",
-          padding: "15px",
-          minHeight: "120px",
-          borderRadius: "8px",
-          backgroundColor: "#f9f9f9"
-        }}
-      >
-        {result}
+        <div className="result-header">
+          <h2>Result</h2>
+          <button
+            onClick={handleCopy}
+            disabled={!result || result.startsWith("Error:")}
+            className="copy-button"
+          >
+            {copied ? "Copied!" : "Copy Result"}
+          </button>
+        </div>
+
+        <div className="result">
+          {result || "Your improved text will appear here."}
+        </div>
       </div>
     </div>
   );
