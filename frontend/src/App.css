@@ -8,9 +8,9 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 72rem;
+  max-width: 80rem;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem 5rem;
+  padding: 2.5rem 1.5rem 4rem;
 }
 
 .hero-panel {
@@ -40,7 +40,7 @@
 .hero-logo {
   position: relative;
   z-index: 1;
-  width: min(240px, 42vw);
+  width: min(180px, 32vw);
   height: auto;
   object-fit: contain;
   filter:
@@ -77,8 +77,8 @@
 .hero-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(3rem, 7vw, 5.5rem);
-  line-height: 0.95;
+  font-size: clamp(2.6rem, 5.8vw, 4.8rem);
+  line-height: 0.98;
   letter-spacing: -0.03em;
   color: var(--foreground);
   text-wrap: balance;

@@ -1,0 +1,30 @@
+{
+  "name": "grammar-app",
+  "version": "1.0.0",
+  "description": "GrammarChecker desktop launcher",
+  "main": "main.js",
+  "scripts": {
+    "frontend": "npm run dev --prefix frontend",
+    "backend": "npm start --prefix backend",
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "electron": "wait-on http://localhost:5173 http://localhost:5000 && electron .",
+    "desktop": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run electron\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LazyPanda902/GrammarChecker.git"
+  },
+  "keywords": [],
+  "author": "Ali Bidhendi",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/LazyPanda902/GrammarChecker/issues"
+  },
+  "homepage": "https://github.com/LazyPanda902/GrammarChecker#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^37.2.6",
+    "wait-on": "^8.0.5"
+  }
+}
