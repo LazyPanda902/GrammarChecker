@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./App.css";
+import logo from "./assets/grammarchecker_logo.png";
 
 function App() {
   const [text, setText] = useState("");
@@ -91,6 +92,11 @@ function App() {
 
       <main className="app-container">
         <section className="hero-panel">
+          <div className="hero-logo-wrap">
+            <div className="hero-logo-glow"></div>
+            <img src={logo} alt="GrammarChecker logo" className="hero-logo" />
+          </div>
+
           <div className="hero-badge">
             <span className="hero-badge-dot"></span>
             Refined Writing Studio
@@ -98,7 +104,8 @@ function App() {
 
           <h1 className="hero-title">Grammar App</h1>
           <p className="hero-subtitle">
-            Improve grammar, rewrite with clarity, and shape your tone in a calm, premium workspace.
+            Improve grammar, rewrite with clarity, and shape your tone in a calm,
+            premium workspace.
           </p>
         </section>
 
