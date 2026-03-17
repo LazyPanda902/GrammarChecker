@@ -85,110 +85,146 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <div className="card">
-        <h1>Grammar App</h1>
-        <p className="subtitle">
-          Fix grammar, rewrite text, and switch between formal or casual tone.
-        </p>
+    <div className="app-shell">
+      <div className="ambient-orb orb-1"></div>
+      <div className="ambient-orb orb-2"></div>
 
-        <label className="label">Your text</label>
-        <textarea
-          rows="10"
-          className="textarea"
-          placeholder="Paste your text here..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-
-        <div className="controls">
-          <div className="mode-box">
-            <label className="label">Mode</label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="select"
-            >
-              <option value="grammar">Grammar</option>
-              <option value="rewrite">Rewrite</option>
-              <option value="formal">Formal</option>
-              <option value="casual">Casual</option>
-            </select>
+      <main className="app-container">
+        <section className="hero-panel">
+          <div className="hero-badge">
+            <span className="hero-badge-dot"></span>
+            Refined Writing Studio
           </div>
 
-          <button onClick={handleSubmit} disabled={loading} className="button">
-            {loading ? "Processing..." : "Submit"}
-          </button>
+          <h1 className="hero-title">Grammar App</h1>
+          <p className="hero-subtitle">
+            Improve grammar, rewrite with clarity, and shape your tone in a calm, premium workspace.
+          </p>
+        </section>
 
-          <button onClick={handleClear} className="button secondary-button">
-            Clear
-          </button>
-        </div>
+        <section className="glass-panel">
+          <div className="section-heading">
+            <div>
+              <p className="section-eyebrow">Workspace</p>
+              <h2 className="section-title">Write with precision</h2>
+            </div>
+          </div>
 
-        <div className="result-header">
-          <h2>Result</h2>
-          <button
-            onClick={handleCopy}
-            disabled={!result || result.startsWith("Error:")}
-            className="copy-button"
-          >
-            {copied ? "Copied!" : "Copy Result"}
-          </button>
-        </div>
+          <div className="field-group">
+            <label className="field-label">Your text</label>
+            <textarea
+              rows="10"
+              className="text-input"
+              placeholder="Paste your text here..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </div>
 
-        <div className="result">
-          {result || "Your improved text will appear here."}
-        </div>
+          <div className="control-row">
+            <div className="field-group mode-group">
+              <label className="field-label">Mode</label>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+                className="select-input"
+              >
+                <option value="grammar">Grammar</option>
+                <option value="rewrite">Rewrite</option>
+                <option value="formal">Formal</option>
+                <option value="casual">Casual</option>
+              </select>
+            </div>
 
-        <div className="history-section">
-          <div className="history-header">
-            <h2>Recent History</h2>
-            {history.length > 0 && (
-              <span className="history-count">{history.length} saved</span>
-            )}
+            <div className="button-row">
+              <button onClick={handleSubmit} disabled={loading} className="btn btn-primary">
+                {loading ? "Processing..." : "Submit"}
+              </button>
+
+              <button onClick={handleClear} className="btn btn-secondary">
+                Clear
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="glass-panel result-panel">
+          <div className="section-heading result-heading">
+            <div>
+              <p className="section-eyebrow">Output</p>
+              <h2 className="section-title">Refined output</h2>
+            </div>
+
+            <button
+              onClick={handleCopy}
+              disabled={!result || result.startsWith("Error:")}
+              className="btn btn-primary copy-btn"
+            >
+              {copied ? "Copied!" : "Copy Result"}
+            </button>
+          </div>
+
+          <div className="result-box">
+            {result || "Your improved text will appear here."}
+          </div>
+        </section>
+
+        <section className="glass-panel history-panel">
+          <div className="section-heading history-heading">
+            <div>
+              <p className="section-eyebrow">Archive</p>
+              <h2 className="section-title">Recent sessions</h2>
+            </div>
+
+            <div className="history-meta">
+              {history.length > 0 ? `${history.length} saved` : "No saved items yet"}
+            </div>
           </div>
 
           {history.length === 0 ? (
             <div className="history-empty">
-              No history yet. Your recent results will show here.
+              Your recent requests will appear here once you start processing text.
             </div>
           ) : (
             <div className="history-list">
               {history.map((item) => (
-                <div key={item.id} className="history-item">
-                  <div className="history-top">
-                    <span className="history-mode">{item.mode}</span>
+                <article key={item.id} className="history-card">
+                  <div className="history-card-top">
+                    <span className="history-tag">{item.mode}</span>
+
                     <div className="history-actions">
                       <button
                         onClick={() => handleUseHistory(item)}
-                        className="small-button"
+                        className="btn btn-small btn-secondary"
                       >
                         Use
                       </button>
                       <button
                         onClick={() => handleDeleteHistory(item.id)}
-                        className="small-button delete-button"
+                        className="btn btn-small btn-danger"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
 
-                  <div className="history-block">
-                    <p className="history-label">Original</p>
-                    <p className="history-text">{item.originalText}</p>
-                  </div>
+                  <div className="history-content-grid">
+                    <div className="history-block">
+                      <p className="history-label">Original</p>
+                      <p className="history-text">{item.originalText}</p>
+                    </div>
 
-                  <div className="history-block">
-                    <p className="history-label">Result</p>
-                    <p className="history-text">{item.resultText}</p>
+                    <div className="history-block">
+                      <p className="history-label">Result</p>
+                      <p className="history-text">{item.resultText}</p>
+                    </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
