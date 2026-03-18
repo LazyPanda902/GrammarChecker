@@ -54,7 +54,7 @@ GrammarChecker helps users improve writing in a clean desktop workspace with sup
 
 ## Project Structure
 
-```text
+
 GrammarChecker/
 ├── backend/
 ├── frontend/
@@ -67,3 +67,52 @@ GrammarChecker/
 ├── electron-store.js
 ├── main.js
 └── preload.js
+
+## Local API Key Behavior
+
+This project is designed so each user provides their own Gemini API key.
+
+The key is stored locally on the user's machine through the desktop app and is not meant to be committed to the repository. This keeps the public project safe while still allowing other people to run the app with their own credentials.
+
+## Getting Started
+
+### 1. Clone the repository
+
+    git clone https://github.com/LazyPanda902/GrammarChecker.git
+    cd GrammarChecker
+
+### 2. Install dependencies
+
+    npm install
+    cd frontend
+    npm install
+    cd ..
+
+### 3. Run the desktop app
+
+    npm run desktop
+
+### 4. Build the app
+
+    npm run pack
+
+Or create a distributable build with:
+
+    npm run dist
+
+## Security
+
+- Do not hardcode real API keys into source files
+- Do not commit a real `.env` file
+- Do not commit any local settings or user data files
+- Each user should enter their own API key in the app
+
+If you discover a security issue, report it responsibly through the repository owner.
+
+## Credits
+
+This project used [Design Prompts](https://www.designprompts.dev/) as inspiration for design prompting and interface direction.
+
+## License
+
+This project is licensed under the MIT License.
