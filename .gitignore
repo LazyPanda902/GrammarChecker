@@ -25,6 +25,8 @@ out/
 release/
 frontend/dist/
 backend/dist/
+!build/
+!build/icon.png
 
 # =========================
 # Electron packaged output
