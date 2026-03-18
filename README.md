@@ -54,9 +54,10 @@ GrammarChecker helps users improve writing in a clean desktop workspace with sup
 
 ## Project Structure
 
-
+```text
 GrammarChecker/
 ├── backend/
+├── build/
 ├── frontend/
 ├── screenshots/
 ├── .env.example
@@ -66,6 +67,7 @@ GrammarChecker/
 ├── SECURITY.md
 ├── electron-store.js
 ├── main.js
+├── package.json
 └── preload.js
 
 ## Local API Key Behavior
