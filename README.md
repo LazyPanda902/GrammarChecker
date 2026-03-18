@@ -96,6 +96,7 @@ Each user adds their own Gemini API key in the app settings. The key is stored l
 ```bash
 git clone https://github.com/LazyPanda902/GrammarChecker.git
 cd GrammarChecker
+```
 
 ### 2. Install dependencies
 
@@ -104,21 +105,25 @@ npm install
 cd frontend
 npm install
 cd ..
+```
 
 ### 3. Run the desktop app
 
 ```bash
 npm run desktop
+```
 
 ### 4. Build the app
 
 ```bash
 npm run pack
+```
 
 To create a distributable build instead:
 
 ```bash
 npm run dist
+```
 
 ## Security
 
