@@ -56,18 +56,31 @@ GrammarChecker helps users improve writing in a clean desktop workspace with sup
 
 
 GrammarChecker/
+
 ├── backend/
+
 ├── build/
+
 ├── frontend/
+
 ├── screenshots/
+
 ├── .env.example
+
 ├── .gitignore
+
 ├── LICENSE
+
 ├── README.md
+
 ├── SECURITY.md
+
 ├── electron-store.js
+
 ├── main.js
+
 ├── package.json
+
 └── preload.js
 
 ## Local API Key Behavior
