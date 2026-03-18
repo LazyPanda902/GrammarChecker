@@ -1,30 +1,60 @@
 {
-  "name": "grammar-app",
+  "name": "grammarchecker",
   "version": "1.0.0",
-  "description": "GrammarChecker desktop launcher",
+  "description": "GrammarChecker desktop application",
   "main": "main.js",
-  "scripts": {
-    "frontend": "npm run dev --prefix frontend",
-    "backend": "npm start --prefix backend",
-    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
-    "electron": "wait-on http://localhost:5173 http://localhost:5000 && electron .",
-    "desktop": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run electron\""
-  },
+  "author": "Ali Bidhendi",
+  "license": "MIT",
+  "type": "commonjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LazyPanda902/GrammarChecker.git"
   },
-  "keywords": [],
-  "author": "Ali Bidhendi",
-  "license": "MIT",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/LazyPanda902/GrammarChecker/issues"
   },
   "homepage": "https://github.com/LazyPanda902/GrammarChecker#readme",
+  "scripts": {
+    "frontend": "npm run dev --prefix frontend",
+    "desktop": "concurrently \"npm run frontend\" \"npm run electron\"",
+    "electron": "wait-on http://localhost:5173 && electron .",
+    "build-frontend": "npm run build --prefix frontend",
+    "pack": "npm run build-frontend && electron-builder --dir",
+    "dist": "npm run build-frontend && electron-builder"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0"
+  },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "electron": "^37.2.6",
+    "electron-builder": "^26.8.1",
     "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "com.lazypanda902.grammarchecker",
+    "productName": "GrammarChecker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "electron-store.js",
+      "frontend/dist/**/*",
+      "frontend/src/assets/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
