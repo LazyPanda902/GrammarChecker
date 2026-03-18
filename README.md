@@ -54,7 +54,7 @@ GrammarChecker helps users improve writing in a clean desktop workspace with sup
 
 ## Project Structure
 
-```text
+
 GrammarChecker/
 ├── backend/
 ├── build/
