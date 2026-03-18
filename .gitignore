@@ -1,14 +1,30 @@
 # dependencies
 node_modules/
 
-# build output
-dist/
-build/
-
 # env files
 .env
 backend/.env
 frontend/.env
+
+# build output
+dist/
+build/
+frontend/dist/
+
+# Electron packaged output
+*.exe
+win-unpacked/
+locales/
+resources/
+
+# accidental shell/output files
+cd
+dir
+npm
+vite
+on
+frontend@0.0.0
+grammarchecker@1.0.0
 
 # logs
 npm-debug.log*
