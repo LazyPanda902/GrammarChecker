@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import logo from "./assets/grammarchecker_logo.png";
 
@@ -14,6 +14,7 @@ function App() {
   const [mode, setMode] = useState("grammar");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState([]);
 
@@ -29,6 +30,12 @@ function App() {
     apiKeyStatus: "missing",
     lastValidatedAt: null
   });
+
+  const currentHistoryRef = useRef(null);
+  const displayQueueRef = useRef([]);
+  const finalResultRef = useRef("");
+  const streamFinishedRef = useRef(false);
+  const revealTimerRef = useRef(null);
 
   const needsSetup = useMemo(() => !settingsState.hasApiKey, [settingsState.hasApiKey]);
 
@@ -56,6 +63,119 @@ function App() {
     setSettingsState(settings);
   };
 
+  const splitIntoRevealTokens = (textChunk) => {
+    return textChunk.match(/\S+\s*|\s+/g) || [];
+  };
+
+  const stopRevealLoop = () => {
+    if (revealTimerRef.current) {
+      clearInterval(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+  };
+
+  const maybeFinishStream = async () => {
+    if (!streamFinishedRef.current) return;
+    if (displayQueueRef.current.length > 0) return;
+
+    stopRevealLoop();
+    setStreaming(false);
+    setLoading(false);
+    setCopied(false);
+
+    const finalResult = finalResultRef.current || "";
+
+    if (currentHistoryRef.current && finalResult && !finalResult.startsWith("Error:")) {
+      const historyItem = {
+        id: Date.now(),
+        mode: currentHistoryRef.current.mode,
+        originalText: currentHistoryRef.current.originalText,
+        resultText: finalResult
+      };
+
+      setHistory((prev) => [historyItem, ...prev].slice(0, 8));
+    }
+
+    await refreshSettings();
+  };
+
+  const startRevealLoop = () => {
+    if (revealTimerRef.current) return;
+
+    revealTimerRef.current = setInterval(async () => {
+      const queue = displayQueueRef.current;
+
+      if (queue.length === 0) {
+        await maybeFinishStream();
+        return;
+      }
+
+      // Reveal multiple tokens each tick so long outputs do not feel stuck
+      let batch = "";
+      let tokensThisTick = 0;
+      const maxTokensPerTick = 2;
+
+      while (queue.length > 0 && tokensThisTick < maxTokensPerTick) {
+        const nextToken = queue.shift();
+        batch += nextToken;
+        tokensThisTick += 1;
+
+        // stop early after punctuation so it still feels natural
+        if (/[.!?]\s*$/.test(nextToken)) {
+          break;
+        }
+      }
+
+      setResult((prev) => prev + batch);
+    }, 55);
+  };
+
+  const resetStreamingState = () => {
+    stopRevealLoop();
+    displayQueueRef.current = [];
+    finalResultRef.current = "";
+    streamFinishedRef.current = false;
+  };
+
+  useEffect(() => {
+    const removeChunkListener = window.grammarAPI.onGrammarStreamChunk((chunk) => {
+      const chunkText = chunk.text || "";
+      if (!chunkText) return;
+
+      finalResultRef.current += chunkText;
+      displayQueueRef.current.push(...splitIntoRevealTokens(chunkText));
+      startRevealLoop();
+    });
+
+    const removeDoneListener = window.grammarAPI.onGrammarStreamDone(async (payload) => {
+      if (payload?.result) {
+        finalResultRef.current = payload.result;
+      }
+
+      streamFinishedRef.current = true;
+      await maybeFinishStream();
+    });
+
+    const removeErrorListener = window.grammarAPI.onGrammarStreamError(async (payload) => {
+      stopRevealLoop();
+      streamFinishedRef.current = false;
+      displayQueueRef.current = [];
+      finalResultRef.current = "";
+
+      setStreaming(false);
+      setLoading(false);
+      setResult(`Error: ${payload.error || "Streaming failed."}`);
+      await refreshSettings();
+    });
+
+    return () => {
+      removeChunkListener();
+      removeDoneListener();
+      removeErrorListener();
+      stopRevealLoop();
+    };
+  }, []);
+
   const handleSubmit = async () => {
     if (!text.trim()) {
       alert("Please enter some text.");
@@ -68,38 +188,34 @@ function App() {
       return;
     }
 
+    resetStreamingState();
     setLoading(true);
+    setStreaming(true);
     setResult("");
     setCopied(false);
 
+    currentHistoryRef.current = {
+      originalText: text,
+      mode
+    };
+
     try {
-      const response = await window.grammarAPI.grammarCheck({ text, mode });
+      const response = await window.grammarAPI.startGrammarStream({ text, mode });
 
       if (!response.success) {
         throw new Error(response.error || "Something went wrong.");
       }
-
-      setResult(response.result);
-
-      const historyItem = {
-        id: Date.now(),
-        mode,
-        originalText: text,
-        resultText: response.result
-      };
-
-      setHistory((prev) => [historyItem, ...prev].slice(0, 8));
-      await refreshSettings();
     } catch (error) {
+      stopRevealLoop();
+      setStreaming(false);
+      setLoading(false);
       setResult(`Error: ${error.message}`);
       await refreshSettings();
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleCopy = async () => {
-    if (!result || result.startsWith("Error:")) return;
+    if (!result || result.startsWith("Error:") || streaming) return;
 
     try {
       await navigator.clipboard.writeText(result);
@@ -114,17 +230,23 @@ function App() {
   };
 
   const handleClear = () => {
+    resetStreamingState();
     setText("");
     setResult("");
     setCopied(false);
     setMode("grammar");
+    setStreaming(false);
+    setLoading(false);
   };
 
   const handleUseHistory = (item) => {
+    resetStreamingState();
     setText(item.originalText);
     setMode(item.mode);
     setResult(item.resultText);
     setCopied(false);
+    setStreaming(false);
+    setLoading(false);
     setActiveTab(TABS.EDITOR);
   };
 
@@ -239,24 +361,13 @@ function App() {
 
         <section className="glass-panel topbar-panel">
           <div className="tab-row">
-            <button
-              className={`tab-button ${activeTab === TABS.EDITOR ? "active" : ""}`}
-              onClick={() => setActiveTab(TABS.EDITOR)}
-            >
+            <button className={`tab-button ${activeTab === TABS.EDITOR ? "active" : ""}`} onClick={() => setActiveTab(TABS.EDITOR)}>
               Editor
             </button>
-
-            <button
-              className={`tab-button ${activeTab === TABS.HISTORY ? "active" : ""}`}
-              onClick={() => setActiveTab(TABS.HISTORY)}
-            >
+            <button className={`tab-button ${activeTab === TABS.HISTORY ? "active" : ""}`} onClick={() => setActiveTab(TABS.HISTORY)}>
               History
             </button>
-
-            <button
-              className={`tab-button ${activeTab === TABS.SETTINGS ? "active" : ""}`}
-              onClick={() => setActiveTab(TABS.SETTINGS)}
-            >
+            <button className={`tab-button ${activeTab === TABS.SETTINGS ? "active" : ""}`} onClick={() => setActiveTab(TABS.SETTINGS)}>
               Settings
             </button>
           </div>
@@ -315,11 +426,7 @@ function App() {
               <div className="control-row">
                 <div className="field-group mode-group">
                   <label className="field-label">Mode</label>
-                  <select
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value)}
-                    className="select-input"
-                  >
+                  <select value={mode} onChange={(e) => setMode(e.target.value)} className="select-input">
                     <option value="grammar">Grammar</option>
                     <option value="rewrite">Rewrite</option>
                     <option value="formal">Formal</option>
@@ -329,10 +436,10 @@ function App() {
 
                 <div className="button-row">
                   <button onClick={handleSubmit} disabled={loading} className="btn btn-primary">
-                    {loading ? "Processing..." : "Submit"}
+                    {streaming ? "Writing..." : loading ? "Processing..." : "Submit"}
                   </button>
 
-                  <button onClick={handleClear} className="btn btn-secondary">
+                  <button onClick={handleClear} className="btn btn-secondary" disabled={loading}>
                     Clear
                   </button>
                 </div>
@@ -348,15 +455,16 @@ function App() {
 
                 <button
                   onClick={handleCopy}
-                  disabled={!result || result.startsWith("Error:")}
+                  disabled={!result || result.startsWith("Error:") || streaming}
                   className="btn btn-primary copy-btn"
                 >
                   {copied ? "Copied!" : "Copy Result"}
                 </button>
               </div>
 
-              <div className="result-box">
+              <div className={`result-box ${streaming ? "result-box-streaming" : ""}`}>
                 {result || "Your improved text will appear here."}
+                {streaming && <span className="typing-cursor"></span>}
               </div>
             </section>
           </>
@@ -387,16 +495,10 @@ function App() {
                       <span className="history-tag">{item.mode}</span>
 
                       <div className="history-actions">
-                        <button
-                          onClick={() => handleUseHistory(item)}
-                          className="btn btn-small btn-secondary"
-                        >
+                        <button onClick={() => handleUseHistory(item)} className="btn btn-small btn-secondary">
                           Use
                         </button>
-                        <button
-                          onClick={() => handleDeleteHistory(item.id)}
-                          className="btn btn-small btn-danger"
-                        >
+                        <button onClick={() => handleDeleteHistory(item.id)} className="btn btn-small btn-danger">
                           Delete
                         </button>
                       </div>
@@ -470,36 +572,20 @@ function App() {
             </div>
 
             <div className="button-row">
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveApiKey}
-                disabled={savingKey}
-              >
+              <button className="btn btn-primary" onClick={handleSaveApiKey} disabled={savingKey}>
                 {savingKey ? "Saving..." : "Save API Key"}
               </button>
 
-              <button
-                className="btn btn-secondary"
-                onClick={handleValidateApiKey}
-                disabled={validatingKey || !settingsState.hasApiKey}
-              >
+              <button className="btn btn-secondary" onClick={handleValidateApiKey} disabled={validatingKey || !settingsState.hasApiKey}>
                 {validatingKey ? "Checking..." : "Validate Key"}
               </button>
 
-              <button
-                className="btn btn-danger"
-                onClick={handleClearApiKey}
-                disabled={!settingsState.hasApiKey}
-              >
+              <button className="btn btn-danger" onClick={handleClearApiKey} disabled={!settingsState.hasApiKey}>
                 Clear Saved Key
               </button>
             </div>
 
-            {settingsMessage && (
-              <div className="settings-message">
-                {settingsMessage}
-              </div>
-            )}
+            {settingsMessage && <div className="settings-message">{settingsMessage}</div>}
           </section>
         )}
       </main>

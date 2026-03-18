@@ -252,6 +252,7 @@
 .text-input,
 .select-input {
   width: 100%;
+  max-width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: rgba(26, 26, 36, 0.6);
@@ -260,10 +261,11 @@
   font-size: 1rem;
   transition: all 200ms ease-out;
   backdrop-filter: blur(8px);
+  box-sizing: border-box;
 }
 
 .text-input {
-  min-height: 16rem;
+  min-height: 13rem;
   resize: vertical;
   line-height: 1.7;
 }
@@ -395,6 +397,34 @@
   line-height: 1.8;
   white-space: pre-wrap;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.result-box-streaming {
+  border-color: rgba(245, 158, 11, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 0 20px rgba(245, 158, 11, 0.08);
+}
+
+.typing-cursor {
+  display: inline-block;
+  width: 0.65rem;
+  height: 1.1rem;
+  margin-left: 0.25rem;
+  vertical-align: -0.15rem;
+  border-radius: 0.15rem;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+  animation: blinkCursor 0.9s ease-in-out infinite;
+}
+
+@keyframes blinkCursor {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
 }
 
 .history-meta {

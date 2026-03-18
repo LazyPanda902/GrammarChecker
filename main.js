@@ -9,8 +9,10 @@ const {
   clearApiKey
 } = require("./electron-store");
 
+let mainWindow = null;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1540,
     height: 1040,
     minWidth: 1180,
@@ -29,9 +31,9 @@ function createWindow() {
   const isDev = !app.isPackaged;
 
   if (isDev) {
-    win.loadURL("http://localhost:5173");
+    mainWindow.loadURL("http://localhost:5173");
   } else {
-    win.loadFile(path.join(__dirname, "frontend", "dist", "index.html"));
+    mainWindow.loadFile(path.join(__dirname, "frontend", "dist", "index.html"));
   }
 }
 
@@ -150,6 +152,82 @@ ${text}`
     return {
       success: false,
       error: "Failed to process text. Check your Gemini key in Settings."
+    };
+  }
+});
+
+ipcMain.handle("grammar:streamStart", async (_event, payload) => {
+  try {
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      updateApiKeyStatus("missing");
+      return {
+        success: false,
+        error: "No API key configured. Open Settings and add your Gemini API key."
+      };
+    }
+
+    const { text, mode } = payload || {};
+
+    if (!text || !text.trim()) {
+      return {
+        success: false,
+        error: "Text is required."
+      };
+    }
+
+    const instruction = buildInstruction(mode);
+    const ai = new GoogleGenAI({ apiKey });
+
+    const stream = await ai.models.generateContentStream({
+      model: "gemini-2.5-flash",
+      contents: `${instruction}
+
+Return only the improved text and no extra commentary.
+
+Text:
+${text}`
+    });
+
+    let finalText = "";
+
+    for await (const chunk of stream) {
+      const chunkText = chunk.text || "";
+
+      if (chunkText) {
+        finalText += chunkText;
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("grammar:streamChunk", {
+            text: chunkText
+          });
+        }
+      }
+    }
+
+    updateApiKeyStatus("valid");
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("grammar:streamDone", {
+        result: finalText
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Grammar streaming failed:", error);
+    updateApiKeyStatus("invalid");
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("grammar:streamError", {
+        error: "Failed to process text. Check your Gemini key in Settings."
+      });
+    }
+
+    return {
+      success: false,
+      error: "Streaming request failed."
     };
   }
 });
