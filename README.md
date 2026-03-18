@@ -3,6 +3,9 @@
 A desktop grammar and rewriting app built with Electron, React, and the Google Gemini API.
 
 GrammarChecker helps users improve writing in a clean desktop workspace with support for grammar correction, rewrites, tone changes, saved local API key flow, and persistent history across launches.
+## Download
+
+Download the latest Windows installer from the [Releases](../../releases) page.
 
 ## Screenshots
 
