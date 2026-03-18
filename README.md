@@ -85,35 +85,40 @@ GrammarChecker/
 
 ## Local API Key Behavior
 
-This project is designed so each user provides their own Gemini API key.
+GrammarChecker does not include a built-in API key.
 
-The key is stored locally on the user's machine through the desktop app and is not meant to be committed to the repository. This keeps the public project safe while still allowing other people to run the app with their own credentials.
+Each user adds their own Gemini API key in the app settings. The key is stored locally on that user's machine and should never be committed to the repository.
 
 ## Getting Started
 
 ### 1. Clone the repository
 
-    git clone https://github.com/LazyPanda902/GrammarChecker.git
-    cd GrammarChecker
+```bash
+git clone https://github.com/LazyPanda902/GrammarChecker.git
+cd GrammarChecker
 
 ### 2. Install dependencies
 
-    npm install
-    cd frontend
-    npm install
-    cd ..
+```bash
+npm install
+cd frontend
+npm install
+cd ..
 
 ### 3. Run the desktop app
 
-    npm run desktop
+```bash
+npm run desktop
 
 ### 4. Build the app
 
-    npm run pack
+```bash
+npm run pack
 
-Or create a distributable build with:
+To create a distributable build instead:
 
-    npm run dist
+```bash
+npm run dist
 
 ## Security
 

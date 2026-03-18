@@ -111,44 +111,27 @@ function App() {
 
       const saveResponse = await window.grammarAPI.saveHistory(historyItem);
 
-      if (saveResponse?.success && saveResponse.item) {
-        setHistory((prev) =>
-          [saveResponse.item, ...prev.filter((item) => item.id !== saveResponse.item.id)].slice(0, 50)
-        );
+      if (saveResponse?.success) {
+        setHistory((prev) => [historyItem, ...prev]);
       }
     }
 
     currentHistoryRef.current = null;
-    await refreshSettings();
   };
 
   const startRevealLoop = () => {
     if (revealTimerRef.current) return;
 
     revealTimerRef.current = setInterval(async () => {
-      const queue = displayQueueRef.current;
-
-      if (queue.length === 0) {
+      if (displayQueueRef.current.length === 0) {
         await maybeFinishStream();
         return;
       }
 
-      let batch = "";
-      let tokensThisTick = 0;
-      const maxTokensPerTick = 2;
+      const nextToken = displayQueueRef.current.shift();
 
-      while (queue.length > 0 && tokensThisTick < maxTokensPerTick) {
-        const nextToken = queue.shift();
-        batch += nextToken;
-        tokensThisTick += 1;
-
-        if (/[.!?]\s*$/.test(nextToken)) {
-          break;
-        }
-      }
-
-      setResult((prev) => prev + batch);
-    }, 55);
+      setResult((prev) => prev + nextToken);
+    }, 16);
   };
 
   const resetStreamingState = () => {
@@ -159,34 +142,34 @@ function App() {
   };
 
   useEffect(() => {
-    const removeChunkListener = window.grammarAPI.onGrammarStreamChunk((chunk) => {
-      const chunkText = chunk.text || "";
+    const removeChunkListener = window.grammarAPI.onStreamChunk((payload) => {
+      const chunkText = payload?.text || "";
+
       if (!chunkText) return;
 
-      finalResultRef.current += chunkText;
       displayQueueRef.current.push(...splitIntoRevealTokens(chunkText));
+      finalResultRef.current += chunkText;
       startRevealLoop();
     });
 
-    const removeDoneListener = window.grammarAPI.onGrammarStreamDone(async (payload) => {
-      if (payload?.result) {
+    const removeDoneListener = window.grammarAPI.onStreamDone(async (payload) => {
+      if (payload?.result && !finalResultRef.current) {
         finalResultRef.current = payload.result;
+        displayQueueRef.current.push(...splitIntoRevealTokens(payload.result));
+        startRevealLoop();
       }
 
       streamFinishedRef.current = true;
       await maybeFinishStream();
     });
 
-    const removeErrorListener = window.grammarAPI.onGrammarStreamError(async (payload) => {
-      stopRevealLoop();
-      streamFinishedRef.current = false;
-      displayQueueRef.current = [];
-      finalResultRef.current = "";
-
+    const removeErrorListener = window.grammarAPI.onStreamError((payload) => {
+      resetStreamingState();
+      currentHistoryRef.current = null;
       setStreaming(false);
       setLoading(false);
-      setResult(`Error: ${payload.error || "Streaming failed."}`);
-      await refreshSettings();
+      setCopied(false);
+      setResult(`Error: ${payload?.error || "Something went wrong."}`);
     });
 
     return () => {
@@ -199,45 +182,51 @@ function App() {
 
   const handleSubmit = async () => {
     if (!text.trim()) {
-      alert("Please enter some text.");
+      alert("Please enter text first.");
       return;
     }
 
-    if (!settingsState.hasApiKey) {
+    if (needsSetup) {
       setActiveTab(TABS.SETTINGS);
-      setSettingsMessage("Add your Gemini API key before using the app.");
+      setSettingsMessage("Add your Gemini API key before using the editor.");
       return;
     }
 
     resetStreamingState();
-    setLoading(true);
-    setStreaming(true);
-    setResult("");
-    setCopied(false);
-
     currentHistoryRef.current = {
-      originalText: text,
+      originalText: text.trim(),
       mode
     };
 
-    try {
-      const response = await window.grammarAPI.startGrammarStream({ text, mode });
+    setLoading(true);
+    setStreaming(true);
+    setCopied(false);
+    setResult("");
 
-      if (!response.success) {
-        throw new Error(response.error || "Something went wrong.");
+    try {
+      const response = await window.grammarAPI.startGrammarStream({
+        text,
+        mode
+      });
+
+      if (!response?.success) {
+        resetStreamingState();
+        currentHistoryRef.current = null;
+        setStreaming(false);
+        setLoading(false);
+        setResult(`Error: ${response?.error || "Unable to process text."}`);
       }
     } catch (error) {
-      stopRevealLoop();
+      resetStreamingState();
+      currentHistoryRef.current = null;
       setStreaming(false);
       setLoading(false);
-      setResult(`Error: ${error.message}`);
-      currentHistoryRef.current = null;
-      await refreshSettings();
+      setResult("Error: Failed to process text.");
     }
   };
 
   const handleCopy = async () => {
-    if (!result || result.startsWith("Error:") || streaming) return;
+    if (!result || result.startsWith("Error:")) return;
 
     try {
       await navigator.clipboard.writeText(result);
@@ -525,57 +514,44 @@ function App() {
         )}
 
         {activeTab === TABS.HISTORY && (
-          <section className="glass-panel history-panel">
+          <section className="glass-panel">
             <div className="section-heading history-heading">
               <div>
-                <p className="section-eyebrow">Archive</p>
-                <h2 className="section-title">Recent sessions</h2>
+                <p className="section-eyebrow">Saved Sessions</p>
+                <h2 className="section-title">History</h2>
               </div>
 
-              <div className="history-meta">
-                {history.length > 0 ? `${history.length} saved` : "No saved items yet"}
-              </div>
-            </div>
-
-            <div className="button-row" style={{ marginBottom: "1rem" }}>
-              <button
-                onClick={handleClearHistory}
-                className="btn btn-danger"
-                disabled={history.length === 0}
-              >
-                Clear All History
+              <button className="btn btn-secondary" onClick={handleClearHistory}>
+                Clear History
               </button>
             </div>
 
             {history.length === 0 ? (
-              <div className="history-empty">
-                Your recent requests will appear here once you start processing text.
-              </div>
+              <div className="history-empty">No saved history yet.</div>
             ) : (
               <div className="history-list">
                 {history.map((item) => (
                   <article key={item.id} className="history-card">
                     <div className="history-card-top">
-                      <span className="history-tag">{item.mode}</span>
+                      <div className="history-meta">
+                        <span className="history-tag">{item.mode}</span>
+                        <span>{new Date(item.createdAt).toLocaleString()}</span>
+                      </div>
 
                       <div className="history-actions">
                         <button
+                          className="btn btn-secondary"
                           onClick={() => handleUseHistory(item)}
-                          className="btn btn-small btn-secondary"
                         >
                           Use
                         </button>
                         <button
+                          className="btn btn-secondary danger-btn"
                           onClick={() => handleDeleteHistory(item.id)}
-                          className="btn btn-small btn-danger"
                         >
                           Delete
                         </button>
                       </div>
-                    </div>
-
-                    <div className="history-meta" style={{ marginBottom: "1rem" }}>
-                      {item.createdAt ? new Date(item.createdAt).toLocaleString() : "Unknown time"}
                     </div>
 
                     <div className="history-content-grid">
@@ -597,7 +573,7 @@ function App() {
         )}
 
         {activeTab === TABS.SETTINGS && (
-          <section className="glass-panel settings-panel">
+          <section className="glass-panel">
             <div className="section-heading">
               <div>
                 <p className="section-eyebrow">Configuration</p>
@@ -617,17 +593,13 @@ function App() {
               </div>
 
               <div className="settings-block">
-                <p className="settings-label">API Key Status</p>
-                <p className="settings-value">{renderStatusText()}</p>
+                <p className="settings-label">API Key Saved</p>
+                <p className="settings-value">{settingsState.hasApiKey ? "Yes" : "No"}</p>
               </div>
 
               <div className="settings-block">
-                <p className="settings-label">Last Validation</p>
-                <p className="settings-value">
-                  {settingsState.lastValidatedAt
-                    ? new Date(settingsState.lastValidatedAt).toLocaleString()
-                    : "Not validated yet"}
-                </p>
+                <p className="settings-label">API Key Status</p>
+                <p className="settings-value">{renderStatusText()}</p>
               </div>
             </div>
 
@@ -635,14 +607,11 @@ function App() {
               <label className="field-label">Gemini API key</label>
               <input
                 type="password"
-                className="text-input single-line-input"
+                className="single-line-input"
                 placeholder="Paste your Gemini API key"
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
               />
-              <p className="helper-text">
-                Your key is stored locally on this machine and checked before use.
-              </p>
             </div>
 
             <div className="button-row">
@@ -657,17 +626,13 @@ function App() {
               <button
                 className="btn btn-secondary"
                 onClick={handleValidateApiKey}
-                disabled={validatingKey || !settingsState.hasApiKey}
+                disabled={validatingKey}
               >
                 {validatingKey ? "Checking..." : "Validate Key"}
               </button>
 
-              <button
-                className="btn btn-danger"
-                onClick={handleClearApiKey}
-                disabled={!settingsState.hasApiKey}
-              >
-                Clear Saved Key
+              <button className="btn btn-secondary danger-btn" onClick={handleClearApiKey}>
+                Remove Saved Key
               </button>
             </div>
 

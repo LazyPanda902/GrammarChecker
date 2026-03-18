@@ -1,10 +1,17 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+function makeListener(channel, callback) {
+  const listener = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
+
 contextBridge.exposeInMainWorld("grammarAPI", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveApiKey: (apiKey) => ipcRenderer.invoke("settings:saveApiKey", apiKey),
   validateApiKey: () => ipcRenderer.invoke("settings:validateApiKey"),
   clearApiKey: () => ipcRenderer.invoke("settings:clearApiKey"),
+
   grammarCheck: (payload) => ipcRenderer.invoke("grammar:check", payload),
 
   getHistory: () => ipcRenderer.invoke("history:get"),
@@ -14,21 +21,11 @@ contextBridge.exposeInMainWorld("grammarAPI", {
 
   startGrammarStream: (payload) => ipcRenderer.invoke("grammar:streamStart", payload),
 
-  onGrammarStreamChunk: (callback) => {
-    const listener = (_event, chunk) => callback(chunk);
-    ipcRenderer.on("grammar:streamChunk", listener);
-    return () => ipcRenderer.removeListener("grammar:streamChunk", listener);
-  },
+  onGrammarStreamChunk: (callback) => makeListener("grammar:streamChunk", callback),
+  onGrammarStreamDone: (callback) => makeListener("grammar:streamDone", callback),
+  onGrammarStreamError: (callback) => makeListener("grammar:streamError", callback),
 
-  onGrammarStreamDone: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("grammar:streamDone", listener);
-    return () => ipcRenderer.removeListener("grammar:streamDone", listener);
-  },
-
-  onGrammarStreamError: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("grammar:streamError", listener);
-    return () => ipcRenderer.removeListener("grammar:streamError", listener);
-  }
+  onStreamChunk: (callback) => makeListener("grammar:streamChunk", callback),
+  onStreamDone: (callback) => makeListener("grammar:streamDone", callback),
+  onStreamError: (callback) => makeListener("grammar:streamError", callback)
 });

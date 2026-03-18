@@ -104,25 +104,23 @@ input,
 .hero-logo-glow {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: 16rem;
-  height: 16rem;
+  width: 14rem;
+  height: 14rem;
   transform: translate(-50%, -50%);
   border-radius: 9999px;
-  background: rgba(245, 158, 11, 0.08);
-  filter: blur(70px);
+  background: rgba(245, 158, 11, 0.05);
+  filter: blur(56px);
   pointer-events: none;
 }
 
 .hero-logo {
   position: relative;
   z-index: 1;
-  width: min(180px, 32vw);
+  width: min(170px, 30vw);
   height: auto;
   object-fit: contain;
-  filter:
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.03))
-    drop-shadow(0 0 20px rgba(245, 158, 11, 0.08));
-  opacity: 0.96;
+  filter: drop-shadow(0 0 14px rgba(245, 158, 11, 0.08));
+  opacity: 1;
 }
 
 .hero-badge {
@@ -662,7 +660,7 @@ input,
   }
 
   .hero-logo {
-    width: min(210px, 52vw);
+    width: min(190px, 48vw);
   }
 }
 
@@ -707,7 +705,7 @@ input,
     height: 16rem;
   }
 
-  .hero-logo {
-    width: min(180px, 56vw);
-  }
+   .hero-logo {
+   width: min(170px, 54vw);
+ }
 }

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const { GoogleGenAI } = require("@google/genai");
 const {
   getSettings,
@@ -15,6 +16,20 @@ const {
 
 let mainWindow = null;
 
+function getWindowIconPath() {
+  const icoPath = path.join(__dirname, "build", "icon.ico");
+  const pngPath = path.join(__dirname, "frontend", "src", "assets", "grammarchecker_logo.png");
+
+  if (process.platform === "win32") {
+    if (fs.existsSync(icoPath)) {
+      return icoPath;
+    }
+    return pngPath;
+  }
+
+  return pngPath;
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1540,
@@ -24,13 +39,33 @@ function createWindow() {
     backgroundColor: "#0A0A0F",
     autoHideMenuBar: true,
     title: "GrammarChecker",
-    icon: path.join(__dirname, "frontend", "src", "assets", "grammarchecker_logo.png"),
+    icon: getWindowIconPath(),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      devTools: !app.isPackaged
     }
   });
+
+  mainWindow.removeMenu();
+
+  if (app.isPackaged) {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      const key = (input.key || "").toLowerCase();
+
+      const blocked =
+        key === "f12" ||
+        (input.control && input.shift && key === "i") ||
+        (input.control && input.shift && key === "j") ||
+        (input.control && input.shift && key === "c") ||
+        (input.control && key === "u");
+
+      if (blocked) {
+        event.preventDefault();
+      }
+    });
+  }
 
   const isDev = !app.isPackaged;
 
