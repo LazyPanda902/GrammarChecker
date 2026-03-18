@@ -61,8 +61,6 @@ Download the latest Windows installer from the [Releases](../../releases) page.
 
 GrammarChecker/
 
-├── backend/
-
 ├── build/
 
 ├── frontend/
