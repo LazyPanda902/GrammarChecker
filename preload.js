@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld("grammarAPI", {
   clearApiKey: () => ipcRenderer.invoke("settings:clearApiKey"),
   grammarCheck: (payload) => ipcRenderer.invoke("grammar:check", payload),
 
+  getHistory: () => ipcRenderer.invoke("history:get"),
+  saveHistory: (item) => ipcRenderer.invoke("history:save", item),
+  deleteHistory: (id) => ipcRenderer.invoke("history:delete", id),
+  clearHistory: () => ipcRenderer.invoke("history:clear"),
+
   startGrammarStream: (payload) => ipcRenderer.invoke("grammar:streamStart", payload),
 
   onGrammarStreamChunk: (callback) => {

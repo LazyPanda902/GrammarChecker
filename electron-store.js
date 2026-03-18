@@ -33,6 +33,71 @@ function writeStore(data) {
   }
 }
 
+function getHistory() {
+  const store = readStore();
+  return Array.isArray(store.history) ? store.history : [];
+}
+
+function saveHistoryItem(item) {
+  try {
+    const store = readStore();
+    const history = Array.isArray(store.history) ? store.history : [];
+
+    const newItem = {
+      id: item?.id || Date.now(),
+      createdAt: item?.createdAt || new Date().toISOString(),
+      mode: item?.mode || "grammar",
+      originalText: item?.originalText || "",
+      resultText: item?.resultText || ""
+    };
+
+    store.history = [newItem, ...history].slice(0, 50);
+    writeStore(store);
+
+    return {
+      success: true,
+      item: newItem
+    };
+  } catch (error) {
+    console.error("Failed to save history item:", error);
+    return {
+      success: false,
+      error: "Failed to save history item."
+    };
+  }
+}
+
+function deleteHistoryItem(id) {
+  try {
+    const store = readStore();
+    const history = Array.isArray(store.history) ? store.history : [];
+    store.history = history.filter((item) => item.id !== id);
+    writeStore(store);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete history item:", error);
+    return {
+      success: false,
+      error: "Failed to delete history item."
+    };
+  }
+}
+
+function clearHistory() {
+  try {
+    const store = readStore();
+    store.history = [];
+    writeStore(store);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to clear history:", error);
+    return {
+      success: false,
+      error: "Failed to clear history."
+    };
+  }
+}
+
 function getSettings() {
   const store = readStore();
 
@@ -126,5 +191,9 @@ module.exports = {
   saveApiKey,
   getApiKey,
   updateApiKeyStatus,
-  clearApiKey
+  clearApiKey,
+  getHistory,
+  saveHistoryItem,
+  deleteHistoryItem,
+  clearHistory
 };

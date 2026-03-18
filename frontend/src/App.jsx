@@ -54,8 +54,23 @@ function App() {
     }
   };
 
+  const loadHistory = async () => {
+    try {
+      const response = await window.grammarAPI.getHistory();
+
+      if (response?.success) {
+        setHistory(Array.isArray(response.history) ? response.history : []);
+      } else {
+        setHistory([]);
+      }
+    } catch (error) {
+      setHistory([]);
+    }
+  };
+
   useEffect(() => {
     loadSettings();
+    loadHistory();
   }, []);
 
   const refreshSettings = async () => {
@@ -88,14 +103,22 @@ function App() {
     if (currentHistoryRef.current && finalResult && !finalResult.startsWith("Error:")) {
       const historyItem = {
         id: Date.now(),
+        createdAt: new Date().toISOString(),
         mode: currentHistoryRef.current.mode,
         originalText: currentHistoryRef.current.originalText,
         resultText: finalResult
       };
 
-      setHistory((prev) => [historyItem, ...prev].slice(0, 8));
+      const saveResponse = await window.grammarAPI.saveHistory(historyItem);
+
+      if (saveResponse?.success && saveResponse.item) {
+        setHistory((prev) =>
+          [saveResponse.item, ...prev.filter((item) => item.id !== saveResponse.item.id)].slice(0, 50)
+        );
+      }
     }
 
+    currentHistoryRef.current = null;
     await refreshSettings();
   };
 
@@ -110,7 +133,6 @@ function App() {
         return;
       }
 
-      // Reveal multiple tokens each tick so long outputs do not feel stuck
       let batch = "";
       let tokensThisTick = 0;
       const maxTokensPerTick = 2;
@@ -120,7 +142,6 @@ function App() {
         batch += nextToken;
         tokensThisTick += 1;
 
-        // stop early after punctuation so it still feels natural
         if (/[.!?]\s*$/.test(nextToken)) {
           break;
         }
@@ -210,6 +231,7 @@ function App() {
       setStreaming(false);
       setLoading(false);
       setResult(`Error: ${error.message}`);
+      currentHistoryRef.current = null;
       await refreshSettings();
     }
   };
@@ -231,6 +253,7 @@ function App() {
 
   const handleClear = () => {
     resetStreamingState();
+    currentHistoryRef.current = null;
     setText("");
     setResult("");
     setCopied(false);
@@ -241,6 +264,7 @@ function App() {
 
   const handleUseHistory = (item) => {
     resetStreamingState();
+    currentHistoryRef.current = null;
     setText(item.originalText);
     setMode(item.mode);
     setResult(item.resultText);
@@ -250,8 +274,25 @@ function App() {
     setActiveTab(TABS.EDITOR);
   };
 
-  const handleDeleteHistory = (id) => {
-    setHistory((prev) => prev.filter((item) => item.id !== id));
+  const handleDeleteHistory = async (id) => {
+    const response = await window.grammarAPI.deleteHistory(id);
+
+    if (response?.success) {
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (history.length === 0) return;
+
+    const confirmed = window.confirm("Clear all saved history?");
+    if (!confirmed) return;
+
+    const response = await window.grammarAPI.clearHistory();
+
+    if (response?.success) {
+      setHistory([]);
+    }
   };
 
   const handleSaveApiKey = async () => {
@@ -361,13 +402,22 @@ function App() {
 
         <section className="glass-panel topbar-panel">
           <div className="tab-row">
-            <button className={`tab-button ${activeTab === TABS.EDITOR ? "active" : ""}`} onClick={() => setActiveTab(TABS.EDITOR)}>
+            <button
+              className={`tab-button ${activeTab === TABS.EDITOR ? "active" : ""}`}
+              onClick={() => setActiveTab(TABS.EDITOR)}
+            >
               Editor
             </button>
-            <button className={`tab-button ${activeTab === TABS.HISTORY ? "active" : ""}`} onClick={() => setActiveTab(TABS.HISTORY)}>
+            <button
+              className={`tab-button ${activeTab === TABS.HISTORY ? "active" : ""}`}
+              onClick={() => setActiveTab(TABS.HISTORY)}
+            >
               History
             </button>
-            <button className={`tab-button ${activeTab === TABS.SETTINGS ? "active" : ""}`} onClick={() => setActiveTab(TABS.SETTINGS)}>
+            <button
+              className={`tab-button ${activeTab === TABS.SETTINGS ? "active" : ""}`}
+              onClick={() => setActiveTab(TABS.SETTINGS)}
+            >
               Settings
             </button>
           </div>
@@ -426,7 +476,11 @@ function App() {
               <div className="control-row">
                 <div className="field-group mode-group">
                   <label className="field-label">Mode</label>
-                  <select value={mode} onChange={(e) => setMode(e.target.value)} className="select-input">
+                  <select
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value)}
+                    className="select-input"
+                  >
                     <option value="grammar">Grammar</option>
                     <option value="rewrite">Rewrite</option>
                     <option value="formal">Formal</option>
@@ -483,6 +537,16 @@ function App() {
               </div>
             </div>
 
+            <div className="button-row" style={{ marginBottom: "1rem" }}>
+              <button
+                onClick={handleClearHistory}
+                className="btn btn-danger"
+                disabled={history.length === 0}
+              >
+                Clear All History
+              </button>
+            </div>
+
             {history.length === 0 ? (
               <div className="history-empty">
                 Your recent requests will appear here once you start processing text.
@@ -495,13 +559,23 @@ function App() {
                       <span className="history-tag">{item.mode}</span>
 
                       <div className="history-actions">
-                        <button onClick={() => handleUseHistory(item)} className="btn btn-small btn-secondary">
+                        <button
+                          onClick={() => handleUseHistory(item)}
+                          className="btn btn-small btn-secondary"
+                        >
                           Use
                         </button>
-                        <button onClick={() => handleDeleteHistory(item.id)} className="btn btn-small btn-danger">
+                        <button
+                          onClick={() => handleDeleteHistory(item.id)}
+                          className="btn btn-small btn-danger"
+                        >
                           Delete
                         </button>
                       </div>
+                    </div>
+
+                    <div className="history-meta" style={{ marginBottom: "1rem" }}>
+                      {item.createdAt ? new Date(item.createdAt).toLocaleString() : "Unknown time"}
                     </div>
 
                     <div className="history-content-grid">
@@ -572,15 +646,27 @@ function App() {
             </div>
 
             <div className="button-row">
-              <button className="btn btn-primary" onClick={handleSaveApiKey} disabled={savingKey}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveApiKey}
+                disabled={savingKey}
+              >
                 {savingKey ? "Saving..." : "Save API Key"}
               </button>
 
-              <button className="btn btn-secondary" onClick={handleValidateApiKey} disabled={validatingKey || !settingsState.hasApiKey}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleValidateApiKey}
+                disabled={validatingKey || !settingsState.hasApiKey}
+              >
                 {validatingKey ? "Checking..." : "Validate Key"}
               </button>
 
-              <button className="btn btn-danger" onClick={handleClearApiKey} disabled={!settingsState.hasApiKey}>
+              <button
+                className="btn btn-danger"
+                onClick={handleClearApiKey}
+                disabled={!settingsState.hasApiKey}
+              >
                 Clear Saved Key
               </button>
             </div>

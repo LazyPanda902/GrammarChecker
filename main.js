@@ -6,7 +6,11 @@ const {
   saveApiKey,
   getApiKey,
   updateApiKeyStatus,
-  clearApiKey
+  clearApiKey,
+  getHistory,
+  saveHistoryItem,
+  deleteHistoryItem,
+  clearHistory
 } = require("./electron-store");
 
 let mainWindow = null;
@@ -103,6 +107,25 @@ ipcMain.handle("settings:validateApiKey", async () => {
 
 ipcMain.handle("settings:clearApiKey", async () => {
   return clearApiKey();
+});
+
+ipcMain.handle("history:get", async () => {
+  return {
+    success: true,
+    history: getHistory()
+  };
+});
+
+ipcMain.handle("history:save", async (_event, item) => {
+  return saveHistoryItem(item);
+});
+
+ipcMain.handle("history:delete", async (_event, id) => {
+  return deleteHistoryItem(id);
+});
+
+ipcMain.handle("history:clear", async () => {
+  return clearHistory();
 });
 
 ipcMain.handle("grammar:check", async (_event, payload) => {
