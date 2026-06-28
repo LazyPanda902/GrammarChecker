@@ -4,7 +4,12 @@ GrammarChecker is a desktop grammar and rewriting app built with Electron, React
 
 It provides grammar correction, rewrites, tone changes, local API key setup, and persistent history in a clean desktop workspace.
 
-## Download
+
+
+## Why this project exists
+
+GrammarChecker is a desktop-first writing assistant for users who want grammar fixes, rewrites, tone changes, and reusable history in a local app shell. It keeps API-key setup explicit and avoids hardcoding secrets into the repository.
+\n## Download
 
 Download the latest Windows installer from the [Releases](../../releases) page.
 
